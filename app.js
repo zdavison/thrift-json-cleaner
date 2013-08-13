@@ -1,15 +1,14 @@
-
-function clean(input){
+function clean(input,aggressiveMode){
     var json = $.parseJSON(input);
-    var cleaned = cleanJSON(json);
+    var cleaned = cleanJSON(json,aggressiveMode);
     return JSON.stringify(cleaned,null,4);
 }
 
-function cleanJSON(input){
+function cleanJSON(input,aggressiveMode){
     var master = {};
     master[input[1]] = input[4];
     var c = cleanObject(master);
-    var t = trimObject(c,0);
+    var t = trimObject(c,0,aggressiveMode);
     return t;
 }
 
@@ -37,6 +36,7 @@ function cleanObject(object){
                 case 'tf':
                 case 'str':
                 case 'i32':
+                case 'dbl':
                     return value;
             }
         }
@@ -44,15 +44,23 @@ function cleanObject(object){
     return object;
 }
 
-function trimObject(object,depth){
+function trimObject(object,depth,aggressiveMode){
+
+    var unwantedKeys = ['rec','lst','map'];
+
     if(typeof object == 'object'){
         var keys = Object.keys(object);
         if(keys.length == 1 && depth !== 0 && !Array.isArray(object)){
             var k = keys[0];
-            return trimObject(object[k],depth+1);
+            if(aggressiveMode || unwantedKeys.indexOf(k) != -1){
+                return trimObject(object[k],depth+1,aggressiveMode);
+            }else{
+                trimObject(object[k],depth+1,aggressiveMode);
+                return object;
+            }
         }else{
             for(var key in object){
-                object[key] = trimObject(object[key],depth+1);
+                object[key] = trimObject(object[key],depth+1,aggressiveMode);
             }
             return object;
         }
